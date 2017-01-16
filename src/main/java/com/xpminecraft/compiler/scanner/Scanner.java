@@ -1,14 +1,7 @@
 package com.xpminecraft.compiler.scanner;
 
-import dk.brics.automaton.Automaton;
-import dk.brics.automaton.RunAutomaton;
-
-import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
-import java.util.regex.MatchResult;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.List;
 
 public class Scanner {
     private LinkedList<TokenType> tokenTypes;
@@ -17,32 +10,23 @@ public class Scanner {
     public void scan() {
         // tokenType  <=>  automaton
         TokenType[] typesToScan = tokenTypes.toArray(new TokenType[0]);
-        int[] previousStates;
-        int[] states = new int[typesToScan.length];
-        RunAutomaton[] automata = new RunAutomaton[typesToScan.length];
-        // create automata & init start states
-        for(int i=0;i < typesToScan.length;i++)
-        {
-            RunAutomaton automaton = typesToScan[i].getAutomaton();
-            automata[i] = automaton;
-        }
-        //boolean notFound = false;
+        List<TrackPair> trackList;
+
         while(lastEnd < source.length())
         {
-            // init all start states
-            for(int i=0;i < states.length;i++)
+            trackList = new LinkedList<>();
+            // init trackList
+            for(int i=0;i < typesToScan.length;i++)
             {
-                states[i] = automata[i].getInitialState();
+                trackList.add(new TrackPair(typesToScan[i]));
             }
-            // init previousStates
-            previousStates = states;
-            boolean advanced = true; // true if any automata change state
-            for(int cursor=lastEnd;cursor < source.length() && advanced;cursor++)
+            boolean matched = false; // true if any automata change state
+            for(int cursor=lastEnd;cursor < source.length();cursor++)
             {
                 char label = source.charAt(cursor);
                 // update automata states
-                advanced = false;
-                for(int i=0;i < states.length;i++)
+                /*
+                for(int i=0;i < typesToScan.length;i++)
                 {
                     // ignore error state
                     if(states[i] == -1)
@@ -54,49 +38,53 @@ public class Scanner {
                     }
                     states[i] = nextState;
                 }
-                // check match
+                */
                 int matches = 0;
-                for(int i=0;i < states.length;i++)
+                TrackPair lastMatch = null;
+                for(TrackPair pair : trackList)
                 {
-                    if(states[i] != -1 && automata[i].isAccept(states[i]))
+                    pair.step(label);
+                    if(pair.isCurrentAccept())
                     {
                         matches++;
+                        lastMatch = pair;
                     }
-                }
 
-                if(matches > 1)     // multiple matches perform next state
+                }
+                // check match
+                if(matches == 1)
                 {
-                    // update previousStates and perform next step
-                    previousStates = states;
+                    foundToken(lastMatch,source.substring(lastEnd,cursor + 1));
+                    matched = true;
+                    lastEnd = cursor + 1;
+                    break;
                 } else if (matches == 0)
                 {
-                    // no matches this step,check whether there's a match previously.
-                    for(int i=0;i < previousStates.length;i++)
+                    //check whether previous run has match
+                    for (TrackPair pair: trackList)
                     {
-                        if(previousStates[i] != -1 && automata[i].isAccept(previousStates[i]))
+                        if(pair.isPreviousAccept())
                         {
-                            foundToken(source.substring(lastEnd,cursor));
-                            lastEnd = cursor;   // advanced start point
+                            foundToken(pair,source.substring(lastEnd,cursor));
+                            matched = true;
+                            lastEnd = cursor;
                             break;
                         }
                     }
-                    // previous state also no match,advance lastEnd
-                    lastEnd = lastEnd + 1;
-                } else
-                {
-                    System.out.println("FOUND: " + source.substring(lastEnd,cursor + 1));
-                    foundToken(source.substring(lastEnd,cursor + 1));
-                    lastEnd = cursor + 1;   // advanced start point
-                    break;
+                    // remove useless error pairs
+                    trackList.removeIf((pair)->pair.isError());
                 }
             }
+            // still no match , advanced start point
+            if(!matched)
+                lastEnd++;
         }
 
     }
 
-    private void foundToken(String lexeme)
+    private void foundToken(TrackPair pair,String lexeme)
     {
-        System.out.println("Found: " + lexeme);
+        System.out.println("Found: " + lexeme + " <" + pair.getTokenType().getName() + ">");
     }
 
 

@@ -12,10 +12,16 @@ public  class TokenType {
 
     public TokenType(String name,RegExp regExp)
     {
+        this.name = name;
         this.regExp = regExp;
     }
     public RunAutomaton getAutomaton()
     {
         return new RunAutomaton(regExp.toAutomaton());
+    }
+
+    public String getName()
+    {
+        return name;
     }
 }

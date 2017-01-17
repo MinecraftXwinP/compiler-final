@@ -1,12 +1,15 @@
 package com.xpminecraft.compiler.scanner;
 
 
+import com.xpminecraft.compiler.scanner.tokens.CounterTokenType;
 import dk.brics.automaton.RegExp;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.LinkedList;
+import java.util.List;
 
 public class Main {
     public static void main(String[] args)
@@ -23,17 +26,30 @@ public class Main {
             }
             System.out.println(buffer.toString());
             Scanner scanner = new Scanner(buffer.toString());
-            scanner.addToken(new TokenType("puntuation",new RegExp("\\#")));
-            scanner.addToken(new TokenType("reserved keywords",
-                                new RegExp("include|main|char|int|float|if|" +
-                                            "else|elseif|for|while|do|return|switch|case|printf|scanf")));
-            // ==== PROBLEM
-            scanner.addToken(new TokenType("pointer", new RegExp("*[a-zA-Z]+.*")));
-            scanner.addToken(new TokenType("operator",new RegExp("+|-|*|/|%|^|++|--|&|\\||=")));
-            scanner.addToken(new TokenType("library name",new RegExp("\\<.*\\>")));
-            scanner.addToken(new TokenType("identifier",new RegExp("[a-zA-Z]+.+")));
-            scanner.addToken(new TokenType("comment",new RegExp("/\\*.*/")));
+            List<TokenType> tokenTypes = new LinkedList<>();
+            tokenTypes.add(new CounterTokenType("reserved keywords",
+                    new RegExp("include|main|char|int|float|if|" +
+                            "else|elseif|for|while|do|return|switch|case|printf|scanf")));
+            tokenTypes.add(new CounterTokenType("library name",new RegExp("\\<[^>]*.h\\>")));
+            tokenTypes.add(new CounterTokenType("comment",new RegExp("/\\*[^(\\*/)]*\\*/.*\r\n|//.*\r\n")));
+
+            tokenTypes.add(new CounterTokenType("pointer", new RegExp("*[a-zA-Z]+[_0-9a-zA-Z]*")));
+            tokenTypes.add(new CounterTokenType("printed token",new RegExp("\".*\"")));
+            tokenTypes.add(new TokenType("blank",new RegExp("\n|\r\n|\t")));
+            tokenTypes.add(new CounterTokenType("puntuation",new RegExp("\\#|,|;|:|\\\"|'")));
+            tokenTypes.add(new CounterTokenType("constant",new RegExp("-?[0-9]+\\.?[0-9]*")));
+            tokenTypes.add(new CounterTokenType("address",new RegExp("&[a-zA-Z]+[_0-9a-zA-Z]*")));
+            tokenTypes.add(new CounterTokenType("format specifier",new RegExp("%d|%f|%c|\\\\\\*")));
+            tokenTypes.add(new CounterTokenType("operator",new RegExp("+|-|*|/|%|^|++|--|&|\\||=")));
+            tokenTypes.add(new CounterTokenType("identifier",new RegExp("[a-zA-Z]+[_0-9a-zA-Z]*")));
+            tokenTypes.add(new CounterTokenType("bracket",new RegExp("\\(|\\)|\\[|\\]|\\{|\\}")));
+            tokenTypes.add(new CounterTokenType("comparator",new RegExp("==|\\<|\\>|\\<=|\\>=|!=")));
+            tokenTypes.forEach((type) -> scanner.addToken(type));
             scanner.scan();
+            tokenTypes.forEach((t) -> {
+                if(t instanceof CounterTokenType)
+                    System.out.println(t);
+            });
         } catch (IOException e)
         {
             e.printStackTrace();

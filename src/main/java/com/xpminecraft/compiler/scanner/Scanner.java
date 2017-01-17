@@ -24,55 +24,33 @@ public class Scanner {
             for(int cursor=lastEnd;cursor < source.length();cursor++)
             {
                 char label = source.charAt(cursor);
+                //remove useless error pairs
+                trackList.removeIf((pair)->pair.isError());
                 // update automata states
-                /*
-                for(int i=0;i < typesToScan.length;i++)
-                {
-                    // ignore error state
-                    if(states[i] == -1)
-                        continue;
-                    int nextState = automata[i].step(states[i],label);
-                    if(nextState != -1)
-                    {
-                        advanced = true;
-                    }
-                    states[i] = nextState;
-                }
-                */
-                int matches = 0;
-                TrackPair lastMatch = null;
                 for(TrackPair pair : trackList)
                 {
                     pair.step(label);
-                    if(pair.isCurrentAccept())
-                    {
-                        matches++;
-                        lastMatch = pair;
-                    }
-
                 }
                 // check match
-                if(matches == 1)
+                int notError = 0;
+                for(TrackPair pair : trackList)
                 {
-                    foundToken(lastMatch,source.substring(lastEnd,cursor + 1));
-                    matched = true;
-                    lastEnd = cursor + 1;
-                    break;
-                } else if (matches == 0)
+                    if(!pair.isError())
+                        notError++;
+                }
+                // all error, check previous matches
+                if(notError == 0)
                 {
-                    //check whether previous run has match
-                    for (TrackPair pair: trackList)
+                    for(TrackPair pair : trackList)
                     {
                         if(pair.isPreviousAccept())
                         {
                             foundToken(pair,source.substring(lastEnd,cursor));
-                            matched = true;
                             lastEnd = cursor;
+                            matched = true;
                             break;
                         }
                     }
-                    // remove useless error pairs
-                    trackList.removeIf((pair)->pair.isError());
                 }
             }
             // still no match , advanced start point
@@ -84,7 +62,11 @@ public class Scanner {
 
     private void foundToken(TrackPair pair,String lexeme)
     {
-        System.out.println("Found: " + lexeme + " <" + pair.getTokenType().getName() + ">");
+        //System.out.println("Found: " + lexeme + " <" + pair.getTokenType().getName() + ">");
+        if(pair.getTokenType() instanceof Action)
+        {
+            ((Action) pair.getTokenType()).accept(lexeme);
+        }
     }
 
 

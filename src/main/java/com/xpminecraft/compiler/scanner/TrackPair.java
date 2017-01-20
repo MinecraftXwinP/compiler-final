@@ -11,7 +11,7 @@ public class TrackPair {
     public TrackPair(TokenType tokenType)
     {
         this.tokenType = tokenType;
-        this.automaton = tokenType.getAutomaton();
+        this.automaton = new RunAutomaton(tokenType.getAutomaton());
         setState(automaton.getInitialState());
     }
     public void setState(int i)

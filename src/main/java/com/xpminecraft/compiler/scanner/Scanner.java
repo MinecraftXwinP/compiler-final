@@ -1,5 +1,7 @@
 package com.xpminecraft.compiler.scanner;
 
+import dk.brics.automaton.Automaton;
+
 import java.util.LinkedList;
 import java.util.List;
 
@@ -58,6 +60,13 @@ public class Scanner {
                 lastEnd++;
         }
 
+    }
+
+    public List<Automaton> getAutomata()
+    {
+        List<Automaton> retAutomatonList = new LinkedList<>();
+        tokenTypes.forEach((t) -> retAutomatonList.add(t.getAutomaton()));
+        return retAutomatonList;
     }
 
     private void foundToken(TrackPair pair,String lexeme)

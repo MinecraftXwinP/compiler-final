@@ -2,6 +2,7 @@ group 'com.xpminecraft'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
+apply plugin: 'application'
 
 sourceCompatibility = 1.8
 
@@ -9,7 +10,10 @@ repositories {
     mavenCentral()
 }
 
+mainClassName = 'com.xpminecraft.compiler.scanner.client.Main'
+
 dependencies {
     compile 'dk.brics.automaton:automaton:1.11-8'
+    compile 'org.tinyjee.jgraphx:jgraphx:3.4.1.3'
     testCompile group: 'junit', name: 'junit', version: '4.11'
 }
